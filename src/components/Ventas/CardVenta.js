@@ -1,22 +1,19 @@
-import React from 'react';
-import {makeStyles, useTheme} from '@material-ui/core/styles'
+import React, {useState} from 'react';
+import {makeStyles} from '@material-ui/core/styles'
 
-import List from '@material-ui/core/List';
-import Card from '@material-ui/core/Card';
-import CardHeader from '@material-ui/core/CardHeader';
-import CardContent from '@material-ui/core/CardContent';
-import CardMedia from '@material-ui/core/CardMedia';
 import Typography from '@material-ui/core/Typography';
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import Fab from '@material-ui/core/Fab';
-import IconButton from '@material-ui/core/IconButton';
-import Icon from '@material-ui/core/Icon';
-import ArrowRightAltIcon from '@material-ui/icons/ArrowRightAlt';
 import DescriptionIcon from '@material-ui/icons/Description';
 import Avatar from '@material-ui/core/Avatar';
+import Tooltip from '@material-ui/core/Tooltip';
+import { Alert, AlertTitle } from '@material-ui/lab';
 
 import moment from 'moment';
+import axios from 'axios';
+
+import DialogFactura from '../Factura/DialogFactura';
 
 const useStyles = makeStyles((theme)=>({
     img: {
@@ -34,9 +31,11 @@ const useStyles = makeStyles((theme)=>({
 }));
 
 const CardVenta = ({data}) => {
-
-    const theme = useTheme();
+    
     moment().format();
+
+    const [facturacionOK, setFacturacionOK] = useState('');
+    const [facturaData, setFacturaData] = useState({});
 
     //console.log(data);
     const classes = useStyles();
@@ -49,6 +48,54 @@ const CardVenta = ({data}) => {
     const costoUnitario = data.items[0].unit_price;
     const datosFactura = data.datos_factura;
     const imgUrl = data.imgUrl;
+
+
+    let facturar = async ()=>{
+
+        //calculo el costo de facturacion
+        let totalVenta = parseFloat(cantidad)*parseFloat(costoUnitario);
+        let neto = Math.round((totalVenta/1.21) * 100) / 100;
+        let iva = Math.round((neto * 0.21) * 100) / 100;
+    
+        //datos para facturar en ws_afip
+        let data ={
+            tipoComp:6,
+            docTipo:99,
+            docNum: parseInt(datosFactura.dni),
+            importeTotal: neto + iva,
+            importeNeto: neto,
+            importeIva: iva
+        }
+    
+        await axios.post('https://localhost:3000/api/facturar',data, {'content-type': 'application/x-www-form-urlencoded'}).then((res)=>{
+            console.log("FACTURANDO...");
+
+            let datos = {
+                tipoFactura:'B', 
+                nombreCliente: `${datosFactura.apellido} ${datosFactura.nombre}`, 
+                dniCliente: datosFactura.dni,
+                fecha: moment(new Date()).format('DD/MM/YYYY'),
+                facturaNro: res.data.data.voucherNumber,
+                cae: res.data.data.CAE,
+                caeVto: res.data.data.CAEFchVto,
+                item:[{
+                    descripcion: titulo,
+                    cantidad: cantidad,
+                    precioUnitario: costoUnitario,
+                    total: totalCompra
+                }]
+            }
+
+            console.log(datos);
+
+            setFacturaData(datos);
+            setFacturacionOK(true);
+        }).catch(err=>{
+             console.log(err);
+            setFacturaData(err.toString());
+            setFacturacionOK(false);
+        });
+    }
 
     return (
         <Paper className={classes.paper}>
@@ -138,10 +185,27 @@ const CardVenta = ({data}) => {
                     </Grid>
 
                     <Grid item >
-                            <Fab color='secondary' aria-label="Facturar">
-                                <DescriptionIcon />
+                        <Tooltip title="Factura Rapida">
+                            <Fab color='secondary' aria-label="Facturar" onClick={facturar}>
+                                <DescriptionIcon/>
                             </Fab>
+                        </Tooltip>
+
+                        {
+                            facturacionOK === true
+                            ? <DialogFactura facturacionOK={facturacionOK} setFacturacionOK={setFacturacionOK} datos={facturaData}/>
+                            : null
+                        }
                     </Grid>
+
+                    {
+                        facturacionOK === false
+                        ? <Alert severity="error">
+                            <AlertTitle>Error</AlertTitle>
+                                {facturaData}
+                          </Alert>
+                        :null
+                    }
                 </Grid>
             </Grid>
         </Paper>

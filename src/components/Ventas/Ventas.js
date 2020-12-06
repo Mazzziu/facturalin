@@ -4,16 +4,11 @@ import CardVenta from './CardVenta';
 
 //material-ui
 import Grid from '@material-ui/core/Grid';
-import {makeStyles, useTheme} from '@material-ui/core/styles';
-import List from '@material-ui/core/List';
+import {makeStyles} from '@material-ui/core/styles';
 import DateFnsUtils from '@date-io/date-fns';
 import {MuiPickersUtilsProvider, KeyboardDatePicker} from '@material-ui/pickers';
 import Button from '@material-ui/core/Button';
 import SearchIcon from '@material-ui/icons/Search';
-import Avatar from '@material-ui/core/Avatar';
-import Typography from '@material-ui/core/Typography';
-import Paper from '@material-ui/core/Paper';
-import Box from '@material-ui/core/Box';
 
 
 const useStyles = makeStyles({
@@ -35,7 +30,6 @@ const useStyles = makeStyles({
 
 const Ventas = () => {
     const classes = useStyles();
-    const theme = useTheme();
 
     const [ventas, setVentas] = useState([]);
 
@@ -67,9 +61,9 @@ const Ventas = () => {
 
             //guardo los ids de las publicaciones para buscar las fotos
             let ids = [];
-            data.data.map(value=>{
-                ids = [ ...ids, value.items[0].item.id];
-            });
+            data.data.map(value=>(
+                ids = [ ...ids, value.items[0].item.id]
+            ));
 
             let optionsImg = {
                 method:'GET',
@@ -79,25 +73,18 @@ const Ventas = () => {
 
             await axios(optionsImg)// busco las caracteristicas de las publicaciones
             .then((value)=>{
-                //agrego las fotos a cada venta en la respuesta anterior
-                let img = value.data.map(prod=>{
-                    //data.data[pos].imgUrl = prod.body.secure_thumbnail;
-                    return ({
+                //armo un json con id y url de la foto
+                let img = value.data.map(prod=>({
                         id: prod.body.id, 
                         url: prod.body.secure_thumbnail
-                    });
-                });
-
-                console.log(img);
-
-                data.data.map((value, pos)=>{
+                    }
+                ));
+                //agrego al principal data.data la url de la foto coincidente con el id
+                data.data.map((value, pos)=>(
                     data.data[pos].imgUrl = img.find(function(obj){
                         return obj.id === value.items[0].item.id;
-                    }).url;
-                    console.log(value.items[0].item.id);
-                    console.log(value);
-                });
-
+                    }).url
+                ));
                 //cargo el state
                 setVentas(data.data);
             }).catch(err=>{

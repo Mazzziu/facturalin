@@ -23,9 +23,6 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 
-import Box from '@material-ui/core/Box';
-import Avatar from '@material-ui/core/Avatar';
-
 //icons
 import AssessmentIcon from '@material-ui/icons/Assessment';
 import ReceiptIcon from '@material-ui/icons/Receipt';
